@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cairo:wght@300;400;500;600;700;800&family=Dancing+Script:wght@500;600;700&family=Great+Vibes&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-blush: #F2E1DD;
+  --surface-ivory: #FFF9F2;
+  --envelope-caramel: #D8AE87;
+  --accent-rose: #D88C88;
+  --btn-dusty-pink: #F3CED0;
+  --text-warm-brown: #795C53;
+  --border-translucent: rgba(216, 174, 135, 0.28);
+  
+  --font-script: 'Great Vibes', 'Dancing Script', 'Alex Brush', cursive;
+  --font-arabic: 'Cairo', 'Amiri', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html {
+  background-color: var(--bg-blush);
+  color: var(--text-warm-brown);
+  scroll-behavior: smooth;
+  font-family: var(--font-arabic);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-blush);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Custom scrollbar in warm rose */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F2E1DD;
+}
+::-webkit-scrollbar-thumb {
+  background: #E5A7A3;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D88C88;
+}
+
+/* Script Typography */
+.font-script {
+  font-family: var(--font-script);
+}
+
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+
+/* Mobile frame container */
+.mobile-container {
+  max-width: 430px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 50px rgba(121, 92, 83, 0.06);
+}
+
+/* Envelope 3D origami flap styling */
+.envelope-perspective {
+  perspective: 1200px;
+}
+
+.envelope-flap {
+  transform-origin: top center;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+}
+
+.envelope-flap.open {
+  transform: rotateX(180deg);
+  z-index: 0;
+}
+
+/* Heart animations */
+@keyframes heartFloatUp {
+  0% {
+    transform: translateY(0) scale(0.8) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(-400px) scale(1.1) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+.floating-heart {
+  position: absolute;
+  pointer-events: none;
+  animation: heartFloatUp 6s linear infinite;
+}
+
+/* iOS Safe areas */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
