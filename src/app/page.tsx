@@ -19,6 +19,7 @@ type Step = 'envelope' | 'love_letter' | 'secret_gate' | 'second_letter' | 'main
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>('envelope');
   const [isClient, setIsClient] = useState(false);
+  const [showMemories, setShowMemories] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -37,10 +38,13 @@ export default function Home() {
   }, []);
 
   const scrollToMemories = () => {
-    const el = document.getElementById('memories-section');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    setShowMemories(true);
+    setTimeout(() => {
+      const el = document.getElementById('memories-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   return (
@@ -116,15 +120,33 @@ export default function Home() {
               <FavoriteMessages />
 
               {/* Hidden Gift Surprise */}
-              <SurpriseGift onScrollToMemories={scrollToMemories} />
+              <SurpriseGift
+                onScrollToMemories={scrollToMemories}
+                isMemoriesVisible={showMemories}
+              />
 
               {/* Memories Timeline */}
-              <MemoriesGallery />
+              <AnimatePresence>
+                {showMemories && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 35, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className="w-full"
+                  >
+                    <MemoriesGallery />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Replay Intro Link at Bottom */}
               <div className="py-6 flex flex-col items-center justify-center text-center">
                 <button
-                  onClick={() => setCurrentStep('envelope')}
+                  onClick={() => {
+                    setCurrentStep('envelope');
+                    setShowMemories(false);
+                  }}
                   className="text-xs text-warmBrown/60 hover:text-warmBrown underline font-arabic transition-colors"
                 >
                   إعادة فتح الظرف من البداية 💌

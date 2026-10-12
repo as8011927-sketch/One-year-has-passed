@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { Sparkles, ChevronDown } from 'lucide-react';
 import { COUPLE_CONFIG } from '@/config/content';
 
 interface SurpriseGiftProps {
   onScrollToMemories: () => void;
+  isMemoriesVisible?: boolean;
 }
 
-export default function SurpriseGift({ onScrollToMemories }: SurpriseGiftProps) {
+export default function SurpriseGift({ onScrollToMemories, isMemoriesVisible = false }: SurpriseGiftProps) {
   const [isOpened, setIsOpened] = useState(false);
 
   const handleOpenGift = () => {
@@ -26,6 +28,20 @@ export default function SurpriseGift({ onScrollToMemories }: SurpriseGiftProps) 
     } catch {
       // safe fallback
     }
+  };
+
+  const handleMemoriesClick = () => {
+    try {
+      confetti({
+        particleCount: 45,
+        spread: 75,
+        origin: { y: 0.8 },
+        colors: ['#D88C88', '#F3CED0', '#E5A7A3', '#89CFF0', '#FFF9F2'],
+      });
+    } catch {
+      // safe fallback
+    }
+    onScrollToMemories();
   };
 
   return (
@@ -125,12 +141,20 @@ export default function SurpriseGift({ onScrollToMemories }: SurpriseGiftProps) 
 
               {/* Continue to Memories Button */}
               <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onScrollToMemories}
-                className="w-full py-3 px-5 rounded-full bg-[#F3CED0] hover:bg-[#EBBEC1] text-warmBrown font-arabic font-semibold text-sm shadow-sm border border-[#D88C88]/30 transition-all"
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={handleMemoriesClick}
+                className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#D88C88] via-[#E29D99] to-[#D88C88] hover:from-[#c97b77] hover:to-[#b86e6a] text-white font-arabic font-bold text-sm sm:text-base shadow-lg shadow-[#D88C88]/35 border border-white/40 ring-2 ring-[#D88C88]/20 hover:ring-[#D88C88]/50 transition-all cursor-pointer select-none flex items-center justify-center gap-2 group"
               >
-                {COUPLE_CONFIG.hiddenGift.continueButtonText}
+                <Sparkles size={18} className="text-amber-100 animate-pulse" />
+                <span>{COUPLE_CONFIG.hiddenGift.continueButtonText}</span>
+                <motion.span
+                  animate={{ y: [0, 4, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                  className="inline-flex items-center"
+                >
+                  <ChevronDown size={20} className="text-white group-hover:translate-y-0.5 transition-transform" />
+                </motion.span>
               </motion.button>
             </motion.div>
           )}
