@@ -25,8 +25,8 @@ export const COUPLE_CONFIG = {
   coupleTitle: "💕 Ziad ❤️ Habiba",
   subTitle: "المكان بتاعنا إحنا الاتنين بس ❤️",
   
-  // Relationship start date: 6 November 2025 — 06/11/2025
-  startDate: "2025-11-06T00:00:00",
+  // Relationship start date: 6 October 2025 — 06/10/2025
+  startDate: "2025-10-06T00:00:00",
   counterHeading: "💕 بدايتنا 💕",
   counterFooter: "كل يوم بيعدي وهفضل أحبك أكتر ❤️",
 

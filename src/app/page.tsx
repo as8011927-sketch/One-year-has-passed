@@ -48,7 +48,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F2E1DD] text-warmBrown relative selection:bg-[#D88C88] selection:text-white pb-16">
+    <main className="min-h-screen bg-[#F2E1DD] text-warmBrown relative selection:bg-[#D88C88] selection:text-white pb-36 sm:pb-44 pb-safe">
       {/* Floating Hearts Background */}
       <FloatingHearts count={14} />
 

@@ -24,8 +24,8 @@ export default function RelationshipCounter() {
 
   useEffect(() => {
     setMounted(true);
-    // Explicit date: 6 November 2025, 00:00:00 local time
-    const startTimestamp = new Date(2025, 10, 6, 0, 0, 0).getTime(); // Note: month 10 is November (0-indexed)
+    // Explicit date: 6 October 2025, 00:00:00 local time
+    const startTimestamp = new Date(2025, 9, 6, 0, 0, 0).getTime(); // Note: month 9 is October (0-indexed)
 
     const updateCounter = () => {
       const now = Date.now();

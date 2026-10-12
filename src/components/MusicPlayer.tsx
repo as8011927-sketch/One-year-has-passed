@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Volume2, VolumeX, Heart, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Heart, AlertCircle, Loader2, ExternalLink, ChevronDown, X, Music } from 'lucide-react';
 import { COUPLE_CONFIG } from '@/config/content';
 
 export default function MusicPlayer() {
@@ -14,12 +14,13 @@ export default function MusicPlayer() {
   const [hasLocalAudio, setHasLocalAudio] = useState(false);
   const [localAudioError, setLocalAudioError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [isSoundCloudActive, setIsSoundCloudActive] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isSeekingRef = useRef(false);
 
   useEffect(() => {
-    // Singleton HTML5 Audio instance with preload="metadata"
+    // HTML5 Audio instance with preload="metadata"
     const audio = new Audio();
     audio.preload = 'metadata';
     audio.src = COUPLE_CONFIG.music.audioSrc || '/audio/do-re-mi.mp3';
@@ -71,7 +72,7 @@ export default function MusicPlayer() {
       setHasLocalAudio(false);
 
       const err = audio.error;
-      let msg = 'تعذر تشغيل الملف الصوتي حالياً';
+      let msg = 'تعذر تشغيل الملف المحلي، متوفرة على ساوندكلاود';
       if (err) {
         switch (err.code) {
           case 1:
@@ -84,16 +85,11 @@ export default function MusicPlayer() {
             msg = 'خطأ في فك ترميز الملف الصوتي';
             break;
           case 4:
-            msg = 'الملف الصوتي الأصلي غير متوفر محلياً';
+            msg = 'استمع للأغنية مباشرة عبر مشغل ساوندكلاود';
             break;
         }
       }
       setLocalAudioError(msg);
-      console.warn('Local audio unavailable or failed to load:', {
-        src: audio.src,
-        errorCode: err?.code,
-        errorMessage: err?.message,
-      });
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -121,9 +117,10 @@ export default function MusicPlayer() {
   }, []);
 
   const togglePlay = async () => {
-    // If local audio is not available or errored, expand the player to reveal the SoundCloud fallback
+    // If local audio is not available, expand drawer to let user play via SoundCloud
     if (!hasLocalAudio || !audioRef.current) {
       setExpanded(true);
+      setIsSoundCloudActive(true);
       return;
     }
 
@@ -134,15 +131,15 @@ export default function MusicPlayer() {
       try {
         setIsLoading(true);
         await audioRef.current.play();
-        // State is updated accurately via handlePlaying event
       } catch (err: unknown) {
         setIsLoading(false);
         setIsPlaying(false);
         const error = err as Error;
         if (error?.name !== 'AbortError') {
           console.warn('Playback request failed:', err);
-          setLocalAudioError('تعذر بدء تشغيل الملف الصوتي');
+          setLocalAudioError('استمع للأغنية عبر مشغل ساوندكلاود');
           setExpanded(true);
+          setIsSoundCloudActive(true);
         }
       }
     }
@@ -181,13 +178,27 @@ export default function MusicPlayer() {
 
   return (
     <>
+      {/* Background Dim Backdrop when Expanded to clearly define it as a bottom sheet */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs cursor-pointer"
+            onClick={() => setExpanded(false)}
+            aria-label="تصغير مشغل الموسيقى"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Floating Bottom Pill Player matching warm romantic theme */}
-      <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
+      <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none pb-safe">
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4 }}
-          className="pointer-events-auto bg-[#FFF9F2]/95 backdrop-blur-md rounded-full px-4 py-2.5 shadow-card border border-[#D8AE87]/35 flex items-center justify-between gap-3 w-full max-w-[360px]"
+          className="pointer-events-auto bg-[#FFF9F2]/95 backdrop-blur-md rounded-full px-4 py-2.5 shadow-card border border-[#D8AE87]/40 flex items-center justify-between gap-3 w-full max-w-[370px]"
         >
           {/* Play/Pause Button */}
           <div className="flex items-center gap-2">
@@ -198,7 +209,7 @@ export default function MusicPlayer() {
             >
               {isLoading ? (
                 <Loader2 size={15} className="animate-spin" />
-              ) : isPlaying ? (
+              ) : isPlaying || isSoundCloudActive ? (
                 <Pause size={15} />
               ) : (
                 <Play size={15} className="ml-0.5" />
@@ -211,7 +222,7 @@ export default function MusicPlayer() {
                 <motion.span
                   key={dot}
                   animate={
-                    isPlaying
+                    isPlaying || isSoundCloudActive
                       ? {
                           height: ['4px', '14px', '4px'],
                           backgroundColor: ['#D8AE87', '#D88C88', '#D8AE87'],
@@ -220,7 +231,7 @@ export default function MusicPlayer() {
                   }
                   transition={{
                     duration: 0.8,
-                    repeat: isPlaying ? Infinity : 0,
+                    repeat: isPlaying || isSoundCloudActive ? Infinity : 0,
                     delay: dot * 0.18,
                     ease: 'easeInOut',
                   }}
@@ -232,15 +243,17 @@ export default function MusicPlayer() {
 
           {/* Song Info & Expand Drawer */}
           <div
-            className="flex items-center gap-2 cursor-pointer select-none flex-1 justify-end"
+            className="flex items-center gap-2.5 cursor-pointer select-none flex-1 justify-end"
             onClick={() => setExpanded(!expanded)}
+            title="اضغط لفتح / تصغير المشغل"
           >
             <div className="flex flex-col text-right">
-              <span className="text-xs font-bold text-warmBrown font-arabic leading-tight">
+              <span className="text-xs font-bold text-warmBrown font-arabic leading-tight flex items-center gap-1 justify-end">
+                {isSoundCloudActive && <span className="text-[10px] text-roseAccent">●</span>}
                 {COUPLE_CONFIG.music.arabicName}
               </span>
               <span className="text-[10px] text-warmBrown/60 font-sans leading-tight mt-0.5">
-                {COUPLE_CONFIG.music.artist}
+                {expanded ? 'اضغط للتصغير ▼' : isSoundCloudActive ? 'شغالة في الخلفية 🎵' : COUPLE_CONFIG.music.artist}
               </span>
             </div>
 
@@ -255,13 +268,36 @@ export default function MusicPlayer() {
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className="fixed bottom-20 left-0 right-0 z-40 flex justify-center px-4"
+            initial={{ opacity: 0, y: 50, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+            className="fixed bottom-20 left-0 right-0 z-50 flex justify-center px-4 pb-safe"
           >
-            <div className="bg-[#FFF9F2] rounded-3xl p-4 shadow-2xl border border-[#D8AE87]/40 w-full max-w-[360px] flex flex-col gap-3">
-              {/* Header */}
+            <div className="bg-[#FFF9F2] rounded-3xl p-4 sm:p-5 shadow-2xl border border-[#D8AE87]/40 w-full max-w-[370px] flex flex-col gap-3 relative">
+              {/* Header with Title and Minimize Button */}
+              <div className="flex items-center justify-between pb-2 border-b border-[#D8AE87]/20">
+                {/* Minimize Button */}
+                <button
+                  onClick={() => setExpanded(false)}
+                  className="flex items-center gap-1.5 text-xs font-arabic font-semibold bg-[#F2E1DD] hover:bg-[#E8C8C2] text-warmBrown px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-xs"
+                  aria-label="تصغير المشغل وتشغيل في الخلفية"
+                >
+                  <ChevronDown size={15} />
+                  <span>تصغير (في الخلفية)</span>
+                </button>
+
+                {/* Close X Button */}
+                <button
+                  onClick={() => setExpanded(false)}
+                  className="p-1 rounded-full text-warmBrown/60 hover:text-warmBrown hover:bg-[#FAF3EB] transition-colors"
+                  aria-label="إغلاق"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Song Title & Artist */}
               <div className="flex items-center justify-between">
                 <div className="flex flex-col text-right">
                   <span className="text-xs font-bold text-warmBrown font-arabic">
@@ -302,61 +338,72 @@ export default function MusicPlayer() {
                 </div>
               )}
 
-              {/* Fallback Section (When local audio file is absent or unplayable) */}
-              {!hasLocalAudio && (
-                <div className="flex flex-col gap-2.5 pt-1">
-                  {localAudioError && (
-                    <div className="text-[11px] text-[#A6635B] font-arabic flex items-center justify-center gap-1.5 bg-[#FAF3EB] py-1.5 px-3 rounded-xl border border-[#D8AE87]/20">
-                      <AlertCircle size={13} className="shrink-0 text-roseAccent" />
-                      <span>{localAudioError}</span>
-                    </div>
-                  )}
+              {/* Notice & SoundCloud Player Container */}
+              <div className="flex flex-col gap-2.5 pt-1">
+                {localAudioError && (
+                  <div className="text-[11px] text-[#A6635B] font-arabic flex items-center justify-center gap-1.5 bg-[#FAF3EB] py-1.5 px-3 rounded-xl border border-[#D8AE87]/20">
+                    <AlertCircle size={13} className="shrink-0 text-roseAccent" />
+                    <span>{localAudioError}</span>
+                  </div>
+                )}
 
-                  {/* Tested Official SoundCloud Embed */}
-                  {COUPLE_CONFIG.music.soundCloudEmbedUrl && (
-                    <div className="w-full h-[120px] rounded-2xl overflow-hidden bg-[#FAF3EB] border border-[#D8AE87]/25 shadow-inner">
-                      <iframe
-                        width="100%"
-                        height="120"
-                        scrolling="no"
-                        frameBorder="no"
-                        allow="autoplay"
-                        src={COUPLE_CONFIG.music.soundCloudEmbedUrl}
-                        className="w-full h-full border-0"
-                        title="DO RE MI - SoundCloud Player"
-                      />
-                    </div>
-                  )}
-
-                  {/* Primary Fallback Link: "استمع على SoundCloud" */}
-                  <a
-                    href={COUPLE_CONFIG.music.soundCloudUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2 px-3 rounded-full bg-[#D88C88] hover:bg-[#CF7E7A] text-white text-xs font-arabic font-bold flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-98"
-                  >
-                    <span>استمع على SoundCloud ❤️</span>
-                    <ExternalLink size={13} />
-                  </a>
+                {/* Notice that audio plays in background */}
+                <div className="text-[11px] text-warmBrown/80 font-arabic bg-[#F2E1DD]/60 p-2 rounded-xl text-center flex items-center justify-center gap-1.5">
+                  <Music size={13} className="text-roseAccent" />
+                  <span>شغّل الأغنية ثم اضغط <b>تصغير</b> وستستمر في الخلفية ❤️</span>
                 </div>
-              )}
 
-              {/* If local audio is playing, still give SoundCloud link as an option */}
-              {hasLocalAudio && (
+                {/* Primary Fallback Link: "استمع على SoundCloud" */}
                 <a
                   href={COUPLE_CONFIG.music.soundCloudUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[11px] text-roseAccent hover:underline flex items-center justify-center gap-1 font-arabic pt-1"
+                  className="w-full py-2 px-3 rounded-full bg-[#D88C88] hover:bg-[#CF7E7A] text-white text-xs font-arabic font-bold flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-98"
                 >
-                  <span>استمع على SoundCloud</span>
-                  <ExternalLink size={11} />
+                  <span>فتح الرابط المباشر على SoundCloud ❤️</span>
+                  <ExternalLink size={13} />
                 </a>
-              )}
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Persistent SoundCloud Embed (NEVER unmounted so music keeps playing in background!) */}
+      {COUPLE_CONFIG.music.soundCloudEmbedUrl && (
+        <div
+          className={
+            expanded
+              ? 'fixed bottom-[280px] left-0 right-0 z-50 flex justify-center px-4 pointer-events-none'
+              : 'absolute -left-[9999px] top-0 w-1 h-1 opacity-0 pointer-events-none overflow-hidden'
+          }
+        >
+          {/* When expanded, show the embedded player inline above the bottom drawer */}
+        </div>
+      )}
+
+      {/* The actual permanent SoundCloud iframe kept alive in the DOM */}
+      <div
+        className={
+          expanded
+            ? 'fixed bottom-[180px] sm:bottom-[190px] left-0 right-0 z-50 flex justify-center px-4 pointer-events-auto'
+            : 'fixed -left-[9999px] -top-[9999px] w-[1px] h-[1px] opacity-0 pointer-events-none'
+        }
+      >
+        <div className="w-full max-w-[370px] h-[120px] rounded-2xl overflow-hidden bg-[#FAF3EB] border border-[#D8AE87]/40 shadow-2xl">
+          <iframe
+            width="100%"
+            height="120"
+            scrolling="no"
+            frameBorder="no"
+            allow="autoplay"
+            src={COUPLE_CONFIG.music.soundCloudEmbedUrl}
+            className="w-full h-full border-0"
+            title="DO RE MI - SoundCloud Player"
+            onLoad={() => setIsSoundCloudActive(true)}
+          />
+        </div>
+      </div>
     </>
   );
 }
