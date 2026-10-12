@@ -114,5 +114,6 @@ export const COUPLE_CONFIG = {
     artist: "محمد سعيد",
     audioSrc: "/audio/do-re-mi.mp3",
     soundCloudUrl: "https://on.soundcloud.com/WrW3ZJBwY6mfeCYC2t",
+    soundCloudEmbedUrl: "https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/msproductionz/do-re-mi-mohammed-saeed&color=%23d88c88&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false",
   },
 };

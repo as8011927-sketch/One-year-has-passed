@@ -41,10 +41,15 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // STRICT PRIVACY: NEVER cache API routes, auth, private session endpoints, or supabase requests
+  // MEDIA: Never intercept audio/video streams or range requests to allow native browser media streaming & 206 responses
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.includes('verify-secret') ||
     url.pathname.includes('supabase') ||
+    url.pathname.startsWith('/audio/') ||
+    event.request.destination === 'audio' ||
+    event.request.destination === 'video' ||
+    event.request.headers.has('range') ||
     event.request.method !== 'GET'
   ) {
     return;
