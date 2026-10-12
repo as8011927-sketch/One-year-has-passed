@@ -65,7 +65,7 @@ export const COUPLE_CONFIG = {
     {
       id: "milestone-1",
       title: "بداية حكايتنا ❤️",
-      date: "13/11/2025",
+      date: "13/10/2025",
       badge: "أول خطوة",
       description: "اليوم اللي بدأ فيه كل شيء حلو في حياتنا",
     },
