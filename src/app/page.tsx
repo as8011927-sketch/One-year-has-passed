@@ -13,7 +13,6 @@ import FavoriteMessages from '@/components/FavoriteMessages';
 import SurpriseGift from '@/components/SurpriseGift';
 import MemoriesGallery from '@/components/MemoriesGallery';
 import MusicPlayer from '@/components/MusicPlayer';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 type Step = 'envelope' | 'love_letter' | 'secret_gate' | 'second_letter' | 'main';
 
@@ -28,8 +27,6 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         if (data.authenticated) {
-          // If already authenticated, user can either stay on envelope or jump to main if requested
-          // For the magical gift experience, we let them open the letter, or if query param ?skip=1 is present
           const urlParams = new URLSearchParams(window.location.search);
           if (urlParams.get('unlocked') === 'true') {
             setCurrentStep('main');
@@ -47,7 +44,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F2E1DD] text-warmBrown relative selection:bg-[#D88C88] selection:text-white pb-20">
+    <main className="min-h-screen bg-[#F2E1DD] text-warmBrown relative selection:bg-[#D88C88] selection:text-white pb-16">
       {/* Floating Hearts Background */}
       <FloatingHearts count={14} />
 
@@ -124,11 +121,8 @@ export default function Home() {
               {/* Memories Timeline */}
               <MemoriesGallery />
 
-              {/* PWA Install discrete prompt */}
-              <PWAInstallPrompt />
-
               {/* Replay Intro Link at Bottom */}
-              <div className="py-8 flex flex-col items-center justify-center text-center">
+              <div className="py-6 flex flex-col items-center justify-center text-center">
                 <button
                   onClick={() => setCurrentStep('envelope')}
                   className="text-xs text-warmBrown/60 hover:text-warmBrown underline font-arabic transition-colors"
@@ -136,7 +130,7 @@ export default function Home() {
                   إعادة فتح الظرف من البداية 💌
                 </button>
                 <p className="text-[11px] text-warmBrown/40 font-arabic mt-2">
-                  صُنع بكل حب من زياد لحبيبة ❤️
+                  صُنع بكل حب من حبيبة لزياد ❤️
                 </p>
               </div>
 

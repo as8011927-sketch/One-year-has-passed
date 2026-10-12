@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = createSessionToken(COUPLE_CONFIG.she);
+    const token = createSessionToken(COUPLE_CONFIG.he);
 
     const response = NextResponse.json({
       success: true,

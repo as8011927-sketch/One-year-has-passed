@@ -2,119 +2,154 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Volume2, VolumeX, Music, ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Music, Heart, AlertCircle, Loader2 } from 'lucide-react';
 import { COUPLE_CONFIG } from '@/config/content';
 
 export default function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [audioFallbackActive, setAudioFallbackActive] = useState(false);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-  // Play gentle romantic chime/melody chord progression via Web Audio API if external player fails or as ambient harmony
-  const startRomanticSynth = () => {
-    try {
-      if (!audioContextRef.current) {
-        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        audioContextRef.current = new AudioCtx();
-      }
-
-      if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
-
-      const ctx = audioContextRef.current;
-      const notes = [261.63, 329.63, 392.00, 523.25, 440.00, 349.23]; // C, E, G, C, A, F
-      let index = 0;
-
-      intervalRef.current = setInterval(() => {
-        if (!isPlaying || isMuted) return;
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(notes[index % notes.length], ctx.currentTime);
-
-        gain.gain.setValueAtTime(0.04, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start();
-        osc.stop(ctx.currentTime + 1.8);
-
-        index++;
-      }, 1200);
-
-      setAudioFallbackActive(true);
-    } catch (e) {
-      console.warn('Web Audio Ambient not supported', e);
-    }
-  };
-
-  const stopRomanticSynth = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-
-  const togglePlay = () => {
-    const nextState = !isPlaying;
-    setIsPlaying(nextState);
-
-    // Communicate with SoundCloud Widget if accessible via iframe postMessage
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(
-        JSON.stringify({ method: nextState ? 'play' : 'pause' }),
-        '*'
-      );
-    }
-
-    if (nextState) {
-      startRomanticSynth();
-    } else {
-      stopRomanticSynth();
-    }
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    // Single singleton HTML5 Audio instance
+    const audio = new Audio();
+    audio.src = COUPLE_CONFIG.music.audioSrc || '/audio/do-re-mi.mp3';
+    audio.preload = 'metadata';
+    audioRef.current = audio;
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration || 0);
+      setIsLoading(false);
+      setHasError(false);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    const handleWaiting = () => {
+      setIsLoading(true);
+    };
+
+    const handlePlaying = () => {
+      setIsLoading(false);
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    const handleError = () => {
+      setIsLoading(false);
+      setHasError(true);
+      console.warn('Audio playback error for /audio/do-re-mi.mp3');
+    };
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
+
     return () => {
-      stopRomanticSynth();
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {});
-      }
+      audio.pause();
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
+      audioRef.current = null;
     };
   }, []);
 
+  const togglePlay = async () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      try {
+        setIsLoading(true);
+        await audioRef.current.play();
+        setIsPlaying(true);
+        setIsLoading(false);
+        setHasError(false);
+      } catch (err) {
+        setIsLoading(false);
+        setHasError(true);
+        console.error('Playback failed:', err);
+      }
+    }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!audioRef.current) return;
+    const nextMute = !isMuted;
+    audioRef.current.muted = nextMute;
+    setIsMuted(nextMute);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    const seekTime = parseFloat(e.target.value);
+    audioRef.current.currentTime = seekTime;
+    setCurrentTime(seekTime);
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs < 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
     <>
-      {/* Floating Bottom Pill Music Player (as in reference video) */}
+      {/* Small Floating Player matching warm romantic theme */}
       <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="pointer-events-auto bg-[#FFF9F2]/95 backdrop-blur-md rounded-full px-4 py-2.5 shadow-card border border-[#D8AE87]/35 flex items-center justify-between gap-3 w-full max-w-[340px]"
+          transition={{ duration: 0.4 }}
+          className="pointer-events-auto bg-[#FFF9F2]/95 backdrop-blur-md rounded-full px-4 py-2.5 shadow-card border border-[#D8AE87]/35 flex items-center justify-between gap-3 w-full max-w-[360px]"
         >
-          {/* Left: Play/Pause button and wave visualizer */}
+          {/* Play/Pause Button */}
           <div className="flex items-center gap-2">
             <button
               onClick={togglePlay}
-              className="w-8 h-8 rounded-full bg-[#D88C88] hover:bg-[#CF7E7A] text-white flex items-center justify-center shadow-xs transition-transform active:scale-90"
+              disabled={hasError}
+              className={`w-9 h-9 rounded-full flex items-center justify-center text-white shadow-xs transition-transform active:scale-90 ${
+                hasError
+                  ? 'bg-warmBrown/40 cursor-not-allowed'
+                  : 'bg-[#D88C88] hover:bg-[#CF7E7A]'
+              }`}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+              {isLoading ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : isPlaying ? (
+                <Pause size={15} />
+              ) : (
+                <Play size={15} className="ml-0.5" />
+              )}
             </button>
 
             {/* Audio Wave Visualizer Dots */}
@@ -142,32 +177,28 @@ export default function MusicPlayer() {
             </div>
           </div>
 
-          {/* Center / Right: Song Title & Note */}
+          {/* Song Info & Expand Drawer */}
           <div
-            className="flex items-center gap-1.5 cursor-pointer select-none"
+            className="flex items-center gap-2 cursor-pointer select-none flex-1 justify-end"
             onClick={() => setExpanded(!expanded)}
           >
             <div className="flex flex-col text-right">
-              <span className="text-xs font-bold text-warmBrown font-arabic leading-none">
+              <span className="text-xs font-bold text-warmBrown font-arabic leading-tight">
                 {COUPLE_CONFIG.music.arabicName}
               </span>
-              <span className="text-[10px] text-warmBrown/60 font-sans leading-none mt-0.5">
+              <span className="text-[10px] text-warmBrown/60 font-sans leading-tight mt-0.5">
                 {COUPLE_CONFIG.music.artist}
               </span>
             </div>
 
-            <div className="w-6 h-6 rounded-full bg-[#F3CED0] flex items-center justify-center text-warmBrown/80">
-              <Music size={12} />
-            </div>
-
-            <div className="text-warmBrown/50 hover:text-warmBrown ml-0.5">
-              {expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            <div className="w-7 h-7 rounded-full bg-[#F3CED0] flex items-center justify-center text-roseAccent">
+              <Heart size={13} className="fill-roseAccent" />
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Expanded SoundCloud Drawer / Info */}
+      {/* Expanded Progress & Seeking Card */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -176,44 +207,47 @@ export default function MusicPlayer() {
             exit={{ opacity: 0, y: 30 }}
             className="fixed bottom-20 left-0 right-0 z-40 flex justify-center px-4"
           >
-            <div className="bg-[#FFF9F2] rounded-3xl p-4 shadow-2xl border border-[#D8AE87]/40 w-full max-w-[340px] flex flex-col gap-3">
+            <div className="bg-[#FFF9F2] rounded-3xl p-4 shadow-2xl border border-[#D8AE87]/40 w-full max-w-[360px] flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-warmBrown font-arabic">
-                  {COUPLE_CONFIG.music.title}
-                </span>
+                <div className="flex flex-col text-right">
+                  <span className="text-xs font-bold text-warmBrown font-arabic">
+                    {COUPLE_CONFIG.music.title}
+                  </span>
+                  <span className="text-[10px] text-warmBrown/60 font-sans">
+                    {COUPLE_CONFIG.music.artist}
+                  </span>
+                </div>
                 <button
                   onClick={toggleMute}
-                  className="text-warmBrown/70 hover:text-warmBrown p-1"
+                  className="text-warmBrown/70 hover:text-warmBrown p-1.5 rounded-full hover:bg-[#FAF3EB]"
                   aria-label={isMuted ? 'Unmute' : 'Mute'}
                 >
                   {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
                 </button>
               </div>
 
-              {/* SoundCloud Embed Widget */}
-              <div className="w-full h-20 rounded-xl overflow-hidden bg-blush-100 border border-[#D8AE87]/20">
-                <iframe
-                  ref={iframeRef}
-                  width="100%"
-                  height="80"
-                  scrolling="no"
-                  frameBorder="no"
-                  allow="autoplay"
-                  src={`https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/mohammed-saeed-official/do-re-mi&color=%23d88c88&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false`}
-                  className="w-full h-full"
+              {/* Progress Slider */}
+              <div className="flex flex-col gap-1 w-full">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1.5 bg-[#FAF3EB] rounded-lg appearance-none cursor-pointer accent-roseAccent"
                 />
+                <div className="flex items-center justify-between text-[10px] font-sans text-warmBrown/60">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
               </div>
 
-              {/* Direct Link to SoundCloud Track */}
-              <a
-                href={COUPLE_CONFIG.music.soundCloudUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] text-roseAccent hover:underline flex items-center justify-center gap-1 font-arabic"
-              >
-                <span>الاستماع على SoundCloud مباشرة</span>
-                <ExternalLink size={11} />
-              </a>
+              {hasError && (
+                <div className="text-[11px] text-[#C95D58] font-arabic flex items-center justify-center gap-1">
+                  <AlertCircle size={12} />
+                  <span>تعذر تشغيل الملف الصوتي حالياً</span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

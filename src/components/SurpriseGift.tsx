@@ -105,7 +105,14 @@ export default function SurpriseGift({ onScrollToMemories }: SurpriseGiftProps) 
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mt-6 flex flex-col items-center w-full"
             >
-              <div className="p-4 rounded-2xl bg-[#FAF3EB] border border-[#D8AE87]/30 w-full mb-4 shadow-xs">
+              <div className="p-4 rounded-2xl bg-[#FAF3EB] border border-[#D8AE87]/30 w-full mb-4 shadow-xs flex flex-col items-center">
+                <div className="w-full max-w-[200px] aspect-[3/4] rounded-xl overflow-hidden mb-3 border-2 border-white shadow-md">
+                  <img
+                    src="/images/memories/memory-1.jpg"
+                    alt="أول يوم في الكلية"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <p className="text-base font-bold text-warmBrown font-arabic leading-relaxed">
                   {COUPLE_CONFIG.hiddenGift.revealedTitle}
                 </p>

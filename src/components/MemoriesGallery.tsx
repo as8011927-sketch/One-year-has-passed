@@ -40,7 +40,6 @@ export default function MemoriesGallery({
         {/* Memories Cards Grid / Vertical Flow */}
         <div className="flex flex-col gap-6">
           {memories.map((item, index) => {
-            // Alternate between Polaroid and Full-card style
             const isPolaroid = index % 2 === 0;
 
             return (
@@ -55,9 +54,9 @@ export default function MemoriesGallery({
                   isPolaroid ? 'pb-5' : ''
                 }`}
               >
-                {/* Photo frame */}
+                {/* Photo frame with object-contain to preserve full faces and details */}
                 <div
-                  className={`relative w-full rounded-2xl overflow-hidden bg-[#FAF3EB] border border-[#D8AE87]/20 ${
+                  className={`relative w-full rounded-2xl overflow-hidden bg-[#FAF3EB] border border-[#D8AE87]/20 flex items-center justify-center ${
                     item.aspectRatio === 'square'
                       ? 'aspect-square'
                       : item.aspectRatio === 'landscape'
@@ -68,7 +67,7 @@ export default function MemoriesGallery({
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-contain sm:object-cover transition-transform duration-500 group-hover:scale-102"
                     loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/images/memories/memory-1.jpg';

@@ -76,13 +76,7 @@ body {
 
 .envelope-flap {
   transform-origin: top center;
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  backface-visibility: hidden;
-}
-
-.envelope-flap.open {
-  transform: rotateX(180deg);
-  z-index: 0;
+  backface-visibility: visible;
 }
 
 /* Heart animations */
